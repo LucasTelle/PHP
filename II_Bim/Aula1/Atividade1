@@ -1,0 +1,75 @@
+<?php
+
+# Dados que chegam do formulário: nome, curso, idade
+# Dados que precisam de validação: nome (preenchido) e idade (> 0)
+# Dados que permanecem preenchidos após o envio: todos
+
+$nome = "";
+$curso = "";
+$idade = "";
+$mensagem = "";
+$valido = false;
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+    $nome  = trim($_POST["nome"] ?? "");
+    $curso = trim($_POST["curso"] ?? "");
+    $idade = trim($_POST["idade"] ?? "");
+
+    if ($nome === "" || (int) $idade <= 0) {
+        $mensagem = "Existem dados inválidos. Verifique o nome e a idade.";
+    } else {
+        $mensagem = "Cadastro realizado com sucesso!";
+        $valido = true;
+    }
+}
+
+$nome_seguro  = htmlspecialchars($nome, ENT_QUOTES, "UTF-8");
+$curso_seguro = htmlspecialchars($curso, ENT_QUOTES, "UTF-8");
+$idade_seguro = htmlspecialchars($idade, ENT_QUOTES, "UTF-8");
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Aluno</title>
+</head>
+
+<body>
+
+    <h1>Cadastro de Aluno</h1>
+
+    <form method="POST">
+        <label for="nome">Nome do aluno:</label>
+        <input type="text" id="nome" name="nome" value="<?= $nome_seguro ?>">
+        <br><br>
+
+        <label for="curso">Curso:</label>
+        <input type="text" id="curso" name="curso" value="<?= $curso_seguro ?>">
+        <br><br>
+
+        <label for="idade">Idade:</label>
+        <input type="number" id="idade" name="idade" value="<?= $idade_seguro ?>">
+        <br><br>
+
+        <button type="submit">Cadastrar</button>
+    </form>
+
+    <?php if ($mensagem !== ""): ?>
+        <p><?= $mensagem ?></p>
+    <?php endif; ?>
+
+    <?php if ($valido): ?>
+        <h2>Resumo</h2>
+        <ul>
+            <li>Nome: <?= $nome_seguro ?></li>
+            <li>Curso: <?= $curso_seguro ?></li>
+            <li>Idade: <?= $idade_seguro ?> anos</li>
+        </ul>
+    <?php endif; ?>
+
+</body>
+
+</html>
