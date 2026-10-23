@@ -1,0 +1,130 @@
+<?php
+
+# Dados do formulário: cliente, produto, preco, quantidade, tipo
+# Precisam ser convertidos: preco (float) e quantidade (int)
+# Dependem de condição: percentual de desconto (valor da compra e tipo de cliente)
+# Resultados de cálculo: subtotal, percentual total, desconto e valor final
+
+$cliente = "";
+$produto = "";
+$preco = "";
+$quantidade = "";
+$tipo = "comum";
+$mensagem = "";
+$calculado = false;
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+    $cliente    = trim($_POST["cliente"] ?? "");
+    $produto    = trim($_POST["produto"] ?? "");
+    $preco      = trim($_POST["preco"] ?? "");
+    $quantidade = trim($_POST["quantidade"] ?? "");
+    $tipo       = trim($_POST["tipo"] ?? "comum");
+
+    $preco_num = (float) str_replace(",", ".", $preco);
+    $qtd_num   = (int) $quantidade;
+
+    if ($cliente === "") {
+        $mensagem = "O nome do cliente é obrigatório.";
+    } elseif ($produto === "") {
+        $mensagem = "O produto é obrigatório.";
+    } elseif ($preco_num <= 0) {
+        $mensagem = "O preço unitário deve ser maior que zero.";
+    } elseif ($qtd_num <= 0) {
+        $mensagem = "A quantidade deve ser maior que zero.";
+    } elseif ($tipo !== "comum" && $tipo !== "premium") {
+        $mensagem = "Tipo de cliente inválido.";
+    } else {
+        $subtotal = $preco_num * $qtd_num;
+
+        # Desconto pelo valor da compra (do maior limite para o menor)
+        if ($subtotal >= 500) {
+            $percentual = 10;
+        } elseif ($subtotal >= 200) {
+            $percentual = 5;
+        } else {
+            $percentual = 0;
+        }
+
+        # Cliente premium recebe mais 2%
+        if ($tipo === "premium") {
+            $percentual += 2;
+        }
+
+        $desconto = $subtotal * $percentual / 100;
+        $total = $subtotal - $desconto;
+        $calculado = true;
+    }
+}
+
+function moeda(float $valor): string
+{
+    return "R$ " . number_format($valor, 2, ",", ".");
+}
+
+$cliente_seguro    = htmlspecialchars($cliente, ENT_QUOTES, "UTF-8");
+$produto_seguro    = htmlspecialchars($produto, ENT_QUOTES, "UTF-8");
+$preco_seguro      = htmlspecialchars($preco, ENT_QUOTES, "UTF-8");
+$quantidade_seguro = htmlspecialchars($quantidade, ENT_QUOTES, "UTF-8");
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Pedido</title>
+</head>
+
+<body>
+
+    <h1>Simulador de Pedido</h1>
+
+    <form method="POST">
+        <label for="cliente">Nome do cliente:</label>
+        <input type="text" id="cliente" name="cliente" value="<?= $cliente_seguro ?>">
+        <br><br>
+
+        <label for="produto">Produto:</label>
+        <input type="text" id="produto" name="produto" value="<?= $produto_seguro ?>">
+        <br><br>
+
+        <label for="preco">Preço unitário (R$):</label>
+        <input type="text" id="preco" name="preco" value="<?= $preco_seguro ?>">
+        <br><br>
+
+        <label for="quantidade">Quantidade:</label>
+        <input type="number" id="quantidade" name="quantidade" value="<?= $quantidade_seguro ?>">
+        <br><br>
+
+        <label for="tipo">Tipo de cliente:</label>
+        <select id="tipo" name="tipo">
+            <option value="comum" <?= $tipo === "comum" ? "selected" : "" ?>>Comum</option>
+            <option value="premium" <?= $tipo === "premium" ? "selected" : "" ?>>Premium</option>
+        </select>
+        <br><br>
+
+        <button type="submit">Simular</button>
+    </form>
+
+    <?php if ($mensagem !== ""): ?>
+        <p><?= $mensagem ?></p>
+    <?php endif; ?>
+
+    <?php if ($calculado): ?>
+        <h2>Resumo do pedido</h2>
+        <ul>
+            <li>Cliente: <?= $cliente_seguro ?> (<?= htmlspecialchars($tipo, ENT_QUOTES, "UTF-8") ?>)</li>
+            <li>Produto: <?= $produto_seguro ?></li>
+            <li>Preço unitário: <?= moeda($preco_num) ?></li>
+            <li>Quantidade: <?= $qtd_num ?></li>
+            <li>Subtotal: <?= moeda($subtotal) ?></li>
+            <li>Desconto total: <?= $percentual ?>%</li>
+            <li>Valor do desconto: <?= moeda($desconto) ?></li>
+            <li><strong>Valor final a pagar: <?= moeda($total) ?></strong></li>
+        </ul>
+    <?php endif; ?>
+
+</body>
+
+</html>
